@@ -1,0 +1,137 @@
+# Copyright (C) Contrasec 2022
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: keyrock
+  name: keyrock
+spec:
+  selector:
+    matchLabels:
+      app: keyrock
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: keyrock
+    spec:
+      containers:
+      - env:
+        - name: IDM_PORT
+          value: "3000"
+        - name: IDM_DB_HOST
+          value: "mysql"
+        - name: IDM_DB_PORT
+          value: "3306"
+        - name: IDM_DB_NAME
+          value: "idm"
+        - name: IDM_DB_SEED
+          value: "true"
+        - name: DEBUG
+          value: "*"
+        - name: IDM_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        - name: IDM_DB_USER
+          value: "root"
+        - name: IDM_ADMIN_USER
+          value: "keyrock.admin@DOMAIN"
+        - name: IDM_ADMIN_EMAIL
+          value: "keyrock.admin@DOMAIN"
+        - name: IDM_ADMIN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: keyrock-secret
+              key: admin-password
+        volumeMounts:
+        - name: keyrock-logo
+          mountPath: /opt/fiware-idm/public/img/keyrock01.png
+          subPath: keyrock01.png
+        - name: keyrock-css
+          mountPath: /opt/fiware-idm/themes/default/kiel.css
+          subPath: kiel.css
+        - name: keyrock-scss
+          mountPath: /opt/fiware-idm/themes/default/style.scss
+          subPath: style.scss
+        imagePullPolicy: IfNotPresent
+        image: fiware/idm:i4trust-rc7
+        name: keyrock
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          items:
+          - key: keyrock01.png
+            path: keyrock01.png
+          name: keyrock-logo
+        name: keyrock-logo
+      - configMap:
+          items:
+          - key: kiel.css
+            path: kiel.css
+          name: keyrock-css
+        name: keyrock-css
+      - configMap:
+          items:
+          - key: style.scss
+            path: style.scss
+          name: keyrock-scss
+        name: keyrock-scss
+status: {}
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: keyrock
+  name: keyrock
+spec:
+  ports:
+  - name: "3000"
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: keyrock
+status:
+  loadBalancer: {}
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      SecRuleEngine On
+      SecAuditEngine On
+      SecAuditLogFormat JSON
+      #SecAuditLog /dev/stdout
+      SecAction "id:900001, phase:1, nolog, pass, t:none, setvar:tx.paranoia_level=1, setvar:tx.allowed_methods=GET PUT POST DELETE PATCH HEAD OPTIONS"
+      SecRule REQUEST_URI "@beginsWith /oauth2/token" "id:700000, phase:2, pass, nolog, ctl:ruleRemoveById=920330"
+  name: keyrock
+spec:
+  rules:
+  - host: accounts.DOMAIN
+    http:
+      paths:
+      - backend:
+          service:
+            name: keyrock
+            port:
+              number: 3000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - accounts.DOMAIN
+    secretName: keyrock-cert
