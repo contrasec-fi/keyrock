@@ -1,5 +1,7 @@
 Keyrock is an IDM for the ODALA project.
 
+You can find details in the [Documentation](https://gitlab.publiccode.solutions/odala-public/documentation/-/tree/main/AccessControl)
+
 © 2022 Contrasec Oy
 
 [License EUPL 1.2](https://eupl.eu/1.2/en/)
