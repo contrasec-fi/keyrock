@@ -57,7 +57,7 @@ spec:
           mountPath: /opt/fiware-idm/themes/default/style.scss
           subPath: style.scss
         imagePullPolicy: IfNotPresent
-        image: fiware/idm:i4trust-rc7
+        image: fiware/idm:8.3.2
         name: keyrock
       restartPolicy: Always
       volumes:
