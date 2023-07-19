@@ -1,3 +1,5 @@
+**NOTE!** this project is intended to be run from GitLab - hence the -gitlab-ci.yml. See the gitlab-ci file to understand what is needed; for example variables and secrets are picked up from GitLab CI/CD variables.
+
 Keyrock is an IDM for the ODALA project.
 
 You can find details in the [Documentation](https://gitlab.publiccode.solutions/odala-public/documentation/-/tree/main/AccessControl).
